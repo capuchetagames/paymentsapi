@@ -15,7 +15,7 @@ public class ApplicationDbContext : DbContext
             .AddJsonFile("appsettings.json")
             .Build();
         
-        _connectionString = configuration.GetConnectionString("ConnectionString");
+        _connectionString = configuration.GetConnectionString("DefaultConnection");
     }
     
     public ApplicationDbContext(string connectionString)
@@ -23,7 +23,7 @@ public class ApplicationDbContext : DbContext
         _connectionString = connectionString;
     }
     
-    public DbSet<Order> Orders { get; set; }
+    public DbSet<Payment> Payments { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

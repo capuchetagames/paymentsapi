@@ -15,17 +15,17 @@ namespace CloudGamesApi.Controllers;
 [Route("/[controller]")]
 public class OrdersController : ControllerBase
 {
-    private readonly IOrderRepository _orderRepository;
+    private readonly IPaymentRepository _paymentRepository;
     private readonly ICacheService _cacheService;
-    public OrdersController(IOrderRepository orderRepository, ICacheService cacheService)
+    public OrdersController(IPaymentRepository paymentRepository, ICacheService cacheService)
     {
-        _orderRepository = orderRepository;
+        _paymentRepository = paymentRepository;
         _cacheService = cacheService;
     }
     
     [HttpGet]
     [Authorize(Policy = nameof(PermissionType.Admin))]
-    [ProducesResponseType(typeof(IEnumerable<Order>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<Payment>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public IActionResult Get()
     {
@@ -40,7 +40,7 @@ public class OrdersController : ControllerBase
                 return Ok(cachedGameList);
             }
             
-            var gameList = _orderRepository.GetAll();
+            var gameList = _paymentRepository.GetAll();
             
             if(gameList.Count>0) _cacheService.Set(gameListKey, gameList);
             
@@ -80,7 +80,7 @@ public class OrdersController : ControllerBase
                 return Ok(cachedGame);
             }
 
-            var game = _orderRepository.GetById(id);
+            var game = _paymentRepository.GetById(id);
             
             if (game == null)
             {
@@ -184,13 +184,13 @@ public class OrdersController : ControllerBase
     {
         try
         {
-            var game = _orderRepository.GetById(id);
+            var game = _paymentRepository.GetById(id);
             if (game == null)
             {
                 return NotFound(new { message = $"Jogo com ID {id} não encontrado." });
             }
             
-            _orderRepository.Delete(id);
+            _paymentRepository.Delete(id);
             return NoContent();
         }
         catch (Exception e)
