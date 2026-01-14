@@ -1,6 +1,6 @@
 namespace Core.Entity;
 
-public class Order : EntityBase
+public class Payment : EntityBase
 {
     public int UserId { get; set; }
     public int GameId { get; set; }

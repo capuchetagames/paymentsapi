@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure.Repository.Configuration;
 
-public class OrderConfiguration : IEntityTypeConfiguration<Order>
+public class PaymentsConfiguration : IEntityTypeConfiguration<Payment>
 {
-    public void Configure(EntityTypeBuilder<Order> builder)
+    public void Configure(EntityTypeBuilder<Payment> builder)
     {
-        builder.ToTable("Orders");
+        builder.ToTable("Payments");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnType("INT").ValueGeneratedNever().UseIdentityColumn();
         builder.Property(x=>x.UserId).HasColumnType("INT").IsRequired();
@@ -17,8 +17,8 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(x => x.Status).HasColumnType("VARCHAR(100)").IsRequired();
         builder.Property(x=> x.CreatedAt).HasColumnType("DATETIME").IsRequired();
         
-        // builder.HasOne(u=>u.User).WithMany(u=>u.Orders).HasPrincipalKey(u=>u.Id);
-        // builder.HasOne(g=>g.Game).WithMany(g=>g.Orders).HasPrincipalKey(g=>g.Id);
+        // builder.HasOne(u=>u.User).WithMany(u=>u.Payments).HasPrincipalKey(u=>u.Id);
+        // builder.HasOne(g=>g.Game).WithMany(g=>g.Payments).HasPrincipalKey(g=>g.Id);
         
     }
 }

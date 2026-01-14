@@ -1,6 +1,6 @@
 namespace Core.Dtos;
 
-public class OrderDto
+public class PaymentDto
 {
     public int Id { get; set; }
     public DateTime CreatedAt { get; set; }
