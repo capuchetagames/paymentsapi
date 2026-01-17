@@ -1,202 +1,284 @@
+using System.Security.Claims;
 using Core;
 using Core.Dtos;
 using Core.Entity;
 using Core.Models;
 using Core.Repository;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CloudGamesApi.Controllers;
+namespace PaymentsApi.Controllers;
 
 /// <summary>
-/// Gerencia as operações CRUD para as compras de jogos
+/// Gerencia as operações CRUD para pedidos/pagamentos.
+/// Utiliza autenticação distribuída via UserAPI.
 /// </summary>
 [ApiController]
-[Route("/[controller]")]
+[Route("api/[controller]")]
 public class OrdersController : ControllerBase
 {
     private readonly IPaymentRepository _paymentRepository;
     private readonly ICacheService _cacheService;
-    public OrdersController(IPaymentRepository paymentRepository, ICacheService cacheService)
+    private readonly ILogger<OrdersController> _logger;
+
+    public OrdersController(IPaymentRepository paymentRepository, ICacheService cacheService, ILogger<OrdersController> logger)
     {
         _paymentRepository = paymentRepository;
         _cacheService = cacheService;
+        _logger = logger;
     }
     
+    /// <summary>
+    /// Lista todos os pedidos. Requer permissão de Admin.
+    /// </summary>
+    /// <returns>Lista de todos os pedidos do sistema.</returns>
     [HttpGet]
-    [Authorize(Policy = nameof(PermissionType.Admin))]
     [ProducesResponseType(typeof(IEnumerable<Payment>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public IActionResult Get()
     {
         try
         {
-            var gameListKey = "ordersList";
-            
-            var cachedGameList = _cacheService.Get(gameListKey);
+            // Verificar se o usuário tem permissão de Admin
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
 
-            if (cachedGameList != null)
+            if (userRole != nameof(PermissionType.Admin))
             {
-                return Ok(cachedGameList);
+                _logger.LogWarning($"Usuário {username} tentou acessar lista completa de pedidos sem permissão de Admin.");
+                return Forbid("Acesso negado. Apenas administradores podem visualizar todos os pedidos.");
+            }
+
+            _logger.LogInformation($"Admin {username} acessando lista completa de pedidos.");
+
+            var ordersListKey = "ordersList";
+            
+            var cachedOrdersList = _cacheService.Get(ordersListKey);
+
+            if (cachedOrdersList != null)
+            {
+                return Ok(cachedOrdersList);
             }
             
-            var gameList = _paymentRepository.GetAll();
+            var ordersList = _paymentRepository.GetAll();
             
-            if(gameList.Count>0) _cacheService.Set(gameListKey, gameList);
+            if(ordersList.Count > 0) 
+                _cacheService.Set(ordersListKey, ordersList);
             
-            return Ok(gameList);
+            return Ok(ordersList);
         }
         catch (Exception e)
         {
+            _logger.LogError($"Erro ao buscar lista de pedidos: {e.Message}");
             return StatusCode(StatusCodes.Status500InternalServerError, new 
             { 
-                message = "Ocorreu um erro interno ao buscar os jogos.",
+                message = "Ocorreu um erro interno ao buscar os pedidos.",
                 error = e.Message
             });
         }
     }
 
     /// <summary>
-    /// Busca um jogo específico pelo seu ID.
+    /// Busca um pedido específico pelo seu ID.
     /// </summary>
-    /// <param name="id">O ID (int) do jogo a ser buscado.</param>
+    /// <param name="id">O ID do pedido a ser buscado.</param>
     /// <remarks>
-    /// Os resultados são cacheados individualmente.<br/>
-    /// Requer autenticação.
+    /// Usuários comuns só podem ver seus próprios pedidos.<br/>
+    /// Administradores podem ver qualquer pedido.<br/>
+    /// Os resultados são cacheados individualmente.
     /// </remarks>
-    /// <returns>O objeto do jogo correspondente ao ID.</returns>
+    /// <returns>O objeto do pedido correspondente ao ID.</returns>
     [HttpGet("{id:int}")]
-    [Authorize]
+    [ProducesResponseType(typeof(Payment), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public IActionResult Get([FromRoute] int id)
     {
         try
         {
-            var gameKey = $"game-{id}";
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
+
+            _logger.LogInformation($"Usuário {username} buscando pedido ID: {id}");
+
+            var orderKey = $"order-{id}";
             
-            var cachedGame = _cacheService.Get(gameKey);
+            var cachedOrder = _cacheService.Get(orderKey);
             
-            if (cachedGame != null)
+            if (cachedOrder != null)
             {
-                return Ok(cachedGame);
+                var cachedPayment = cachedOrder as Payment;
+                
+                // Verificar permissões para o objeto em cache
+                if (userRole != nameof(PermissionType.Admin) && 
+                    cachedPayment?.UserId.ToString() != userId)
+                {
+                    _logger.LogWarning($"Usuário {username} tentou acessar pedido {id} sem permissão.");
+                    return Forbid("Você só pode visualizar seus próprios pedidos.");
+                }
+                
+                return Ok(cachedOrder);
             }
 
-            var game = _paymentRepository.GetById(id);
+            var order = _paymentRepository.GetById(id);
             
-            if (game == null)
+            if (order == null)
             {
-                return NotFound(new { message = $"Jogo com ID {id} não encontrado." });
+                return NotFound(new { message = $"Pedido com ID {id} não encontrado." });
+            }
+
+            // Verificar se o usuário tem permissão para ver este pedido
+            if (userRole != nameof(PermissionType.Admin) && 
+                order.UserId.ToString() != userId)
+            {
+                _logger.LogWarning($"Usuário {username} tentou acessar pedido {id} de outro usuário.");
+                return Forbid("Você só pode visualizar seus próprios pedidos.");
             }
             
-            _cacheService.Set(gameKey, game);
+            _cacheService.Set(orderKey, order);
             
-            return Ok(game);
+            _logger.LogInformation($"Pedido {id} retornado com sucesso para usuário {username}");
+            return Ok(order);
         }
         catch (Exception e)
         {
-            return BadRequest(e);
+            _logger.LogError($"Erro ao buscar pedido {id}: {e.Message}");
+            return StatusCode(StatusCodes.Status500InternalServerError, new 
+            { 
+                message = "Erro interno do servidor.",
+                error = e.Message
+            });
         }
     }
 
     /// <summary>
-    /// Cria um novo jogo.
+    /// Obtém o histórico de pedidos do usuário autenticado.
     /// </summary>
-    /// <remarks>
-    /// Apenas usuários com a política 'Admin' podem criar jogos.
-    /// </remarks>
-    /// <param name="gameInput">Os dados do novo jogo a ser criado.</param>
-    /// <returns>O jogo recém-criado.</returns>
-    // [HttpPost]
-    // [Authorize(Policy = nameof(PermissionType.Admin))]
-    // [Consumes("application/json")]
-    // public IActionResult Post([FromBody] GameInput gameInput)
-    // {
-    //     try
-    //     {
-    //         var game = new Game()
-    //         {
-    //             Name = gameInput.Name,
-    //             Category = gameInput.Category,
-    //             Active = gameInput.Active,
-    //             Price = gameInput.Price,
-    //         };
-    //         _orderRepository.Add(game);
-    //         
-    //         return CreatedAtAction(nameof(Get), new { id = game.Id }, game);
-    //     }
-    //     catch (Exception e)
-    //     {
-    //         return BadRequest(e);
-    //     }
-    // }
+    /// <returns>Lista de pedidos do usuário logado.</returns>
+    [HttpGet("my-orders")]
+    [ProducesResponseType(typeof(IEnumerable<Payment>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public IActionResult GetMyOrders()
+    {
+        try
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
 
-    /// <summary>
-    /// Atualiza um jogo existente.
-    /// </summary>
-    /// <remarks>
-    /// Apenas usuários com a política 'Admin' podem atualizar jogos.
-    /// </remarks>
-    /// <param name="gameInput">Os dados do jogo a ser atualizado.<br/> O ID é obrigatório.</param>
-    /// <returns>Nenhum conteúdo em caso de sucesso.</returns>
-    // [HttpPut]
-    // [Authorize(Policy = nameof(PermissionType.Admin))]
-    // public IActionResult Put([FromBody] UpdateGameInput gameInput)
-    // {
-    //     try
-    //     {
-    //         var game = _orderRepository.GetById(gameInput.Id);
-    //         
-    //         if (game == null)
-    //         {
-    //             return NotFound(new { message = $"Jogo com ID {gameInput.Id} não encontrado." });
-    //         }
-    //         
-    //         game.Name = gameInput.Name;
-    //         game.Category = gameInput.Category;
-    //         game.Active = gameInput.Active;
-    //         game.Price = gameInput.Price;
-    //         
-    //         _orderRepository.Update(game);
-    //         
-    //         return NoContent();
-    //     }
-    //     catch (Exception e)
-    //     {
-    //         return BadRequest(e);
-    //     }
-    // }
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("ID do usuário não encontrado no token.");
+            }
+
+            _logger.LogInformation($"Buscando pedidos do usuário {username} (ID: {userId})");
+
+            var userOrdersKey = $"user-orders-{userId}";
+            
+            var cachedUserOrders = _cacheService.Get(userOrdersKey);
+            
+            if (cachedUserOrders != null)
+            {
+                return Ok(cachedUserOrders);
+            }
+
+            // Buscar pedidos do usuário específico
+            var userOrders = _paymentRepository.GetAll()
+                .Where(p => p.UserId == int.Parse(userId))
+                .OrderByDescending(p => p.Id) // Ordenar por mais recente
+                .ToList();
+
+            if (userOrders.Any())
+            {
+                _cacheService.Set(userOrdersKey, userOrders);
+            }
+
+            _logger.LogInformation($"Retornados {userOrders.Count} pedidos para usuário {username}");
+            return Ok(userOrders);
+        }
+        catch (Exception e)
+        {
+            _logger.LogError($"Erro ao buscar pedidos do usuário: {e.Message}");
+            return StatusCode(StatusCodes.Status500InternalServerError, new 
+            { 
+                message = "Erro interno do servidor.",
+                error = e.Message
+            });
+        }
+    }
     
     /// <summary>
-    /// Deleta um jogo pelo ID.
+    /// Deleta um pedido pelo ID. Apenas Admins podem deletar pedidos.
     /// </summary>
-    /// <remarks>
-    /// Apenas usuários com a política 'Admin' podem deletar jogos.
-    /// </remarks>
-    /// <param name="id">O ID (int) do jogo a ser deletado.</param>
+    /// <param name="id">O ID do pedido a ser deletado.</param>
     /// <returns>Nenhum conteúdo em caso de sucesso.</returns>
     [HttpDelete("{id:int}")]
-    [Authorize(Policy = nameof(PermissionType.Admin))]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public IActionResult Delete([FromRoute] int id)
     {
         try
         {
-            var game = _paymentRepository.GetById(id);
-            if (game == null)
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            var username = User.FindFirst(ClaimTypes.Name)?.Value;
+
+            // Verificar se o usuário tem permissão de Admin
+            if (userRole != nameof(PermissionType.Admin))
             {
-                return NotFound(new { message = $"Jogo com ID {id} não encontrado." });
+                _logger.LogWarning($"Usuário {username} tentou deletar pedido {id} sem permissão de Admin.");
+                return Forbid("Acesso negado. Apenas administradores podem deletar pedidos.");
+            }
+
+            _logger.LogInformation($"Admin {username} tentando deletar pedido ID: {id}");
+
+            var order = _paymentRepository.GetById(id);
+            if (order == null)
+            {
+                return NotFound(new { message = $"Pedido com ID {id} não encontrado." });
             }
             
             _paymentRepository.Delete(id);
+            
+            // Limpar cache relacionado
+            _cacheService.Remove($"order-{id}");
+            _cacheService.Remove("ordersList");
+            _cacheService.Remove($"user-orders-{order.UserId}");
+            
+            _logger.LogInformation($"Pedido {id} deletado com sucesso pelo admin {username}");
             return NoContent();
         }
         catch (Exception e)
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Ocorreu um erro interno.", error = e.Message });
+            _logger.LogError($"Erro ao deletar pedido {id}: {e.Message}");
+            return StatusCode(StatusCodes.Status500InternalServerError, new 
+            { 
+                message = "Ocorreu um erro interno.", 
+                error = e.Message 
+            });
         }
+    }
+
+    /// <summary>
+    /// Endpoint público para verificar status do serviço de pedidos.
+    /// </summary>
+    /// <returns>Status do serviço.</returns>
+    [HttpGet("health")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult Health()
+    {
+        return Ok(new 
+        { 
+            status = "healthy", 
+            service = "PaymentsAPI - Orders", 
+            timestamp = DateTime.UtcNow 
+        });
     }
     
     
