@@ -1,5 +1,7 @@
+using Core.Models;
 using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
+using PaymentsApi.Middlewares;
 using PaymentsApi.Service;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +22,17 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString);
 }, ServiceLifetime.Scoped);
 
+// Configuração do HttpClient para comunicação com UserAPI
+builder.Services.AddHttpClient("UsersApi", client =>
+{
+    var usersApiUrl = builder.Configuration["Services:UsersApi:BaseUrl"] ?? "http://usersapi:5000/";
+    client.BaseAddress = new Uri(usersApiUrl);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
+// Registrar serviços de validação de token
+builder.Services.AddScoped<ITokenValidationService, TokenValidationService>();
 
 var app = builder.Build();
 
@@ -34,6 +47,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Adicionar middleware de validação JWT customizado
+app.UseMiddleware<JwtValidationMiddleware>();
 
 app.UseAuthorization();
 
