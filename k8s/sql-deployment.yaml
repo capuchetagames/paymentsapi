@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payments-db
+  template:
+    metadata:
+      labels:
+        app: payments-db
+    spec:
+      containers:
+        - name: payments-db
+          image: mcr.microsoft.com/mssql/server:2022-latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 1434
+          env:
+            
+            - name: ACCEPT_EULA
+              valueFrom:
+                configMapKeyRef:
+                  name: payments-db-config
+                  key: ACCEPT_EULA
+            
+            - name: SA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: payments-secret
+                  key: DB_PASSWORD
