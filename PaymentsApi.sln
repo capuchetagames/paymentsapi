@@ -12,6 +12,31 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "Core\Core.csproj", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure", "Infrastructure\Infrastructure.csproj", "{98C0877B-BA09-4366-A09E-2165D9167DC7}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docker", "docker", "{03DD882E-FA69-49E3-B0D1-E06A006F1B70}"
+	ProjectSection(SolutionItems) = preProject
+		docker-compose.yaml = docker-compose.yaml
+		Dockerfile = Dockerfile
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "k8s", "k8s", "{00472E82-2CFA-4718-AB1C-F092597BD7FF}"
+	ProjectSection(SolutionItems) = preProject
+		k8s\env.sh = k8s\env.sh
+		k8s\k8s-delete-all.sh = k8s\k8s-delete-all.sh
+		k8s\k8s-deploy-api.sh = k8s\k8s-deploy-api.sh
+		k8s\k8s-deploy-db.sh = k8s\k8s-deploy-db.sh
+		k8s\k8s-dev-api.sh = k8s\k8s-dev-api.sh
+		k8s\k8s-start-all-deploy.sh = k8s\k8s-start-all-deploy.sh
+		k8s\k8s-start-all-dev.sh = k8s\k8s-start-all-dev.sh
+		k8s\sql-configmap.yaml = k8s\sql-configmap.yaml
+		k8s\sql-deployment.yaml = k8s\sql-deployment.yaml
+		k8s\sql-service.yaml = k8s\sql-service.yaml
+		k8s\payments-api-configmap.yaml = k8s\payments-api-configmap.yaml
+		k8s\payments-deployment.yaml = k8s\payments-deployment.yaml
+		k8s\payments-pod.yaml = k8s\payments-pod.yaml
+		k8s\payments-secret.yaml = k8s\payments-secret.yaml
+		k8s\payments-service.yaml = k8s\payments-service.yaml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

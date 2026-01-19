@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payments-api
+  template:
+    metadata:
+      labels:
+        app: payments-api
+    spec:
+      initContainers:
+        - name: wait-for-payments-db
+          image: mcr.microsoft.com/mssql-tools:latest
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: payments-secret
+                  key: DB_PASSWORD
+          command:
+            - /bin/bash
+            - -c
+            - |
+              echo "Waiting for SQL Server..."
+              until /opt/mssql-tools/bin/sqlcmd \
+                -S payments-db,1434 \
+                -U sa \
+                -P "$DB_PASSWORD" \
+                -Q "SELECT 1" \
+                -C > /dev/null 2>&1
+              do
+                sleep 5
+              done
+      containers:
+        - name: payments-api
+          image: payments-api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: payments-api-config
+                  key: DB_HOST
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: payments-api-config
+                  key: DB_NAME
+            - name: ASPNETCORE_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: payments-api-config
+                  key: ASPNETCORE_ENVIRONMENT
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: payments-secret
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: payments-secret
+                  key: DB_PASSWORD
+                  
+                  
