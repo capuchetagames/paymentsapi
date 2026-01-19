@@ -11,4 +11,4 @@ kubectl apply -f ${APPNAME}-api-configmap.yaml
 
 echo "Deploy ${APPNAME}..."
 kubectl apply -f ${APPNAME}-pod.yaml
-kubectl apply -f ${APPNAME}-services.yaml
+kubectl apply -f ${APPNAME}-service.yaml
