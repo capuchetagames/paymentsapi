@@ -34,6 +34,8 @@ builder.Services.AddHttpClient("UsersApi", client =>
 // Registrar serviços de validação de token
 builder.Services.AddScoped<ITokenValidationService, TokenValidationService>();
 
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -46,7 +48,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
+
+
+app.MapHealthChecks("/health");
 
 // Adicionar middleware de validação JWT customizado
 app.UseMiddleware<JwtValidationMiddleware>();
