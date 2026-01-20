@@ -1,4 +1,4 @@
-namespace NotificationsApi.Configs;
+namespace PaymentsApi.Configs;
 
 public class RabbitMqSettings
 {

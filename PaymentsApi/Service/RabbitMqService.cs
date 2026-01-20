@@ -1,18 +1,25 @@
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 using Core.Models;
+using PaymentsApi.Configs;
 using RabbitMQ.Client;
-using UsersApi.Configs;
+using RabbitMQ.Client.Events;
 
-namespace UsersApi.Service;
+namespace PaymentsApi.Service;
 
-public class RabbitMqService : IRabbitMqService, IAsyncDisposable
+public class RabbitMqService : IRabbitMqService
 {
+    private readonly RabbitMqSettings _settings;
     private readonly IConnection _connection;
-    private readonly IChannel _channel;
+    private readonly IChannel _publishChannel;
+
+    private readonly ConcurrentBag<IChannel> _consumerChannels = new();
 
     public RabbitMqService(RabbitMqSettings settings)
     {
+        _settings = settings;
+
         var factory = new ConnectionFactory
         {
             HostName = settings.Host,
@@ -22,29 +29,47 @@ public class RabbitMqService : IRabbitMqService, IAsyncDisposable
         };
 
         _connection = factory.CreateConnectionAsync().GetAwaiter().GetResult();
-        _channel = _connection.CreateChannelAsync().GetAwaiter().GetResult();
+
+        _publishChannel = _connection.CreateChannelAsync().GetAwaiter().GetResult();
     }
 
-    public async Task PublishAsync<T>(string exchange, string routingKey, T message)
+    public async Task PublishAsync<T>(string exchange, string routingKey, T message, CancellationToken cancellationToken)
     {
-        await _channel.ExchangeDeclareAsync(
-            exchange: exchange,
-            type: ExchangeType.Topic,
-            durable: true
-        );
+        await _publishChannel.ExchangeDeclareAsync(exchange, ExchangeType.Topic, durable: true, cancellationToken: cancellationToken);
 
         var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
 
-        await _channel.BasicPublishAsync(
-            exchange: exchange,
-            routingKey: routingKey,
-            body: body
-        );
+        await _publishChannel.BasicPublishAsync(exchange, routingKey, body, cancellationToken: cancellationToken);
+    }
+
+    public async Task ConsumeAsync<T>(string exchange, string queue, string routingKey, Func<T, Task> handler, CancellationToken cancellationToken)
+    {
+        var channel = await _connection.CreateChannelAsync(cancellationToken:cancellationToken);
+        _consumerChannels.Add(channel);
+
+        await channel.ExchangeDeclareAsync(exchange, ExchangeType.Topic, true, cancellationToken:cancellationToken);
+        await channel.QueueDeclareAsync(queue, true, false, false, null, cancellationToken:cancellationToken);
+        await channel.QueueBindAsync(queue, exchange, routingKey, cancellationToken:cancellationToken);
+
+        var consumer = new AsyncEventingBasicConsumer(channel);
+
+        consumer.ReceivedAsync += async (_, ea) =>
+        {
+            var message = JsonSerializer.Deserialize<T>(ea.Body.Span);
+            await handler(message!);
+
+            await channel.BasicAckAsync(ea.DeliveryTag, false, cancellationToken);
+        };
+
+        await channel.BasicConsumeAsync(queue, false, consumer, cancellationToken);
     }
 
     public async ValueTask DisposeAsync()
     {
-        await _channel.CloseAsync();
+        foreach (var channel in _consumerChannels)
+            await channel.CloseAsync();
+
+        await _publishChannel.CloseAsync();
         await _connection.CloseAsync();
     }
 }

@@ -1,6 +1,9 @@
 using Core.Models;
+using Core.Repository;
 using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using PaymentsApi.Configs;
 using PaymentsApi.Middlewares;
 using PaymentsApi.Service;
 
@@ -8,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 var configuration = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json").Build();
+    .AddJsonFile("appsettings.Development.json").Build();
 
 var connectionString = configuration.GetConnectionString("DefaultConnection");
 
@@ -21,6 +24,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     options.UseSqlServer(connectionString);
 }, ServiceLifetime.Scoped);
+
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+
 
 // Configuração do HttpClient para comunicação com UserAPI
 builder.Services.AddHttpClient("UsersApi", client =>
@@ -35,6 +41,18 @@ builder.Services.AddHttpClient("UsersApi", client =>
 builder.Services.AddScoped<ITokenValidationService, TokenValidationService>();
 
 builder.Services.AddHealthChecks();
+
+builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMq"));
+
+builder.Services.AddSingleton<IRabbitMqService>(sp =>
+{
+    var settings = sp.GetRequiredService<IOptions<RabbitMqSettings>>().Value;
+    return new RabbitMqService(settings);
+});
+
+builder.Services.AddHostedService<OrderEventsConsumer>();
+
+builder.Services.AddScoped<IPaymentProcessor, PaymentProcessorService>();
 
 var app = builder.Build();
 

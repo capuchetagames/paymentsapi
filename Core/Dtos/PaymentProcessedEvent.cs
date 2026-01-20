@@ -1,3 +1,8 @@
 namespace Core.Dtos;
 
-public record PaymentProssedEvent();
+public record PaymentProcessedEvent(
+    int UserId,
+    string Email,
+    string Name,
+    string Status
+    );
