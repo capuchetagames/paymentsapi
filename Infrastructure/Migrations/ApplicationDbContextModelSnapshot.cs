@@ -25,7 +25,7 @@ namespace Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Core.Entity.Order", b =>
+            modelBuilder.Entity("Core.Entity.Payment", b =>
                 {
                     b.Property<int>("Id")
                         .HasColumnType("INT");
@@ -50,7 +50,7 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Orders", (string)null);
+                    b.ToTable("Payments", (string)null);
                 });
 #pragma warning restore 612, 618
         }
