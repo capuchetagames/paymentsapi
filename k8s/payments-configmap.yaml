@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: payments-api-config
+  name: payments-config
 data:
   DB_HOST: "payments-db"
   DB_NAME: "Db.Payments"
