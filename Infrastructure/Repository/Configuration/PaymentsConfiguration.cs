@@ -10,7 +10,7 @@ public class PaymentsConfiguration : IEntityTypeConfiguration<Payment>
     {
         builder.ToTable("Payments");
         builder.HasKey(x => x.Id);
-        builder.Property(x => x.Id).HasColumnType("INT").ValueGeneratedNever().UseIdentityColumn();
+        builder.Property(x => x.Id).HasColumnType("INT").UseIdentityColumn();
         builder.Property(x=>x.UserId).HasColumnType("INT").IsRequired();
         builder.Property(x=>x.GameId).HasColumnType("INT").IsRequired();
         builder.Property(x => x.Price).HasColumnType("DECIMAL(7,4)").IsRequired();
