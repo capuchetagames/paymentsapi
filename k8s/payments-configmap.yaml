@@ -6,3 +6,5 @@ data:
   DB_HOST: "payments-db"
   DB_NAME: "Db.Payments"
   ASPNETCORE_ENVIRONMENT: "Development"
+  ACCEPT_EULA: "Y"
+  MSSQL_PID: "Developer"

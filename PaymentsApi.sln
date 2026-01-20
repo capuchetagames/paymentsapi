@@ -27,14 +27,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "k8s", "k8s", "{00472E82-2CF
 		k8s\k8s-dev-api.sh = k8s\k8s-dev-api.sh
 		k8s\k8s-start-all-deploy.sh = k8s\k8s-start-all-deploy.sh
 		k8s\k8s-start-all-dev.sh = k8s\k8s-start-all-dev.sh
-		k8s\sql-configmap.yaml = k8s\sql-configmap.yaml
 		k8s\sql-deployment.yaml = k8s\sql-deployment.yaml
 		k8s\sql-service.yaml = k8s\sql-service.yaml
-		k8s\payments-api-configmap.yaml = k8s\payments-api-configmap.yaml
 		k8s\payments-deployment.yaml = k8s\payments-deployment.yaml
 		k8s\payments-pod.yaml = k8s\payments-pod.yaml
 		k8s\payments-secret.yaml = k8s\payments-secret.yaml
 		k8s\payments-service.yaml = k8s\payments-service.yaml
+		k8s\payments-configmap.yaml = k8s\payments-configmap.yaml
 	EndProjectSection
 EndProject
 Global
