@@ -1,5 +1,8 @@
 #!/bin/bash
 
-./k8s-deploy-db.sh
 
-./k8s-dev-api.sh
+PATH_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+source "${PATH_FILE}/k8s-deploy-db.sh"
+
+source "${PATH_FILE}/k8s-dev-api.sh"
