@@ -42,10 +42,10 @@ paymentsapi/
 ## 🚀 Tecnologias Utilizadas
 
 - **.NET 8.0** - Framework principal
-- **Entity Framework Core 8.0** - ORM para acesso ao banco de dados
+- **Entity Framework Core 8.0.22** - ORM para acesso ao banco de dados
 - **SQL Server 2022** - Banco de dados relacional
-- **RabbitMQ 7.2** - Message broker para comunicação assíncrona
-- **FluentValidation 12.1** - Validação de dados
+- **RabbitMQ.Client 7.2.0** - Message broker para comunicação assíncrona
+- **FluentValidation 12.1.1** - Validação de dados
 - **Swagger/ReDoc** - Documentação da API
 - **Docker & Docker Compose** - Containerização
 - **Kubernetes** - Orquestração de containers
