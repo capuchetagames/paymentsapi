@@ -11,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 var configuration = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.Development.json").Build();
+    .AddJsonFile("appsettings.json").Build();
 
 var connectionString = configuration.GetConnectionString("DefaultConnection");
 
@@ -40,6 +40,8 @@ builder.Services.AddHttpClient("UsersApi", client =>
 // Registrar serviços de validação de token
 builder.Services.AddScoped<ITokenValidationService, TokenValidationService>();
 
+builder.Services.AddScoped<IPaymentProcessor, PaymentProcessorService>();
+
 builder.Services.AddHealthChecks();
 
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMq"));
@@ -52,7 +54,7 @@ builder.Services.AddSingleton<IRabbitMqService>(sp =>
 
 builder.Services.AddHostedService<OrderEventsConsumer>();
 
-builder.Services.AddScoped<IPaymentProcessor, PaymentProcessorService>();
+
 
 var app = builder.Build();
 
@@ -72,7 +74,7 @@ if (app.Environment.IsDevelopment())
 app.MapHealthChecks("/health");
 
 // Adicionar middleware de validação JWT customizado
-app.UseMiddleware<JwtValidationMiddleware>();
+//app.UseMiddleware<JwtValidationMiddleware>();
 
 app.UseAuthorization();
 

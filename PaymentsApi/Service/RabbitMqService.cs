@@ -33,13 +33,13 @@ public class RabbitMqService : IRabbitMqService
         _publishChannel = _connection.CreateChannelAsync().GetAwaiter().GetResult();
     }
 
-    public async Task PublishAsync<T>(string exchange, string routingKey, T message, CancellationToken cancellationToken)
+    public async Task PublishAsync<T>(string exchange, string routingKey, T message)
     {
-        await _publishChannel.ExchangeDeclareAsync(exchange, ExchangeType.Topic, durable: true, cancellationToken: cancellationToken);
+        await _publishChannel.ExchangeDeclareAsync(exchange, ExchangeType.Topic, durable: true);
 
         var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
 
-        await _publishChannel.BasicPublishAsync(exchange, routingKey, body, cancellationToken: cancellationToken);
+        await _publishChannel.BasicPublishAsync(exchange, routingKey, body);
     }
 
     public async Task ConsumeAsync<T>(string exchange, string queue, string routingKey, Func<T, Task> handler, CancellationToken cancellationToken)
@@ -55,10 +55,12 @@ public class RabbitMqService : IRabbitMqService
 
         consumer.ReceivedAsync += async (_, ea) =>
         {
-            var message = JsonSerializer.Deserialize<T>(ea.Body.Span);
-            await handler(message!);
+            
+                var message = JsonSerializer.Deserialize<T>(ea.Body.Span);
+            
+                await handler(message!);
 
-            await channel.BasicAckAsync(ea.DeliveryTag, false, cancellationToken);
+                await channel.BasicAckAsync(ea.DeliveryTag, false, cancellationToken);
         };
 
         await channel.BasicConsumeAsync(queue, false, consumer, cancellationToken);
