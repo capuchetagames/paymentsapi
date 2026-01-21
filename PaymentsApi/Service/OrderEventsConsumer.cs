@@ -8,9 +8,10 @@ public class OrderEventsConsumer : BackgroundService
     private readonly IRabbitMqService _rabbitMqService;
     private readonly IServiceScopeFactory _scopeFactory;
 
-    public OrderEventsConsumer(IRabbitMqService rabbitMqService)
+    public OrderEventsConsumer(IRabbitMqService rabbitMqService,IServiceScopeFactory scopeFactory)
     {
         _rabbitMqService = rabbitMqService;
+        _scopeFactory = scopeFactory;
     }
     
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -20,9 +21,9 @@ public class OrderEventsConsumer : BackgroundService
         // routingKey: "payment.requested",
         
         await _rabbitMqService.ConsumeAsync<OrderPlacedEvent>(
-            exchange: "payments.events",
-            queue: "payments.process",
-            routingKey: "payment.*",
+            exchange: "order.events",
+            queue: "order.process",
+            routingKey: "order.*",
             handler: Handle,
             cancellationToken: stoppingToken
         );
