@@ -1,29 +1,19 @@
 using Core.Models;
 using Core.Repository;
 using Infrastructure.Repository;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using PaymentsApi.Configs;
-using PaymentsApi.Middlewares;
 using PaymentsApi.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-var configuration = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json").Build();
-
-var connectionString = configuration.GetConnectionString("DefaultConnection");
-
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-{
-    options.UseSqlServer(connectionString);
-}, ServiceLifetime.Scoped);
+builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 
