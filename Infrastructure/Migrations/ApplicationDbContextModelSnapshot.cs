@@ -28,6 +28,7 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Core.Entity.Payment", b =>
                 {
                     b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("INT");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
