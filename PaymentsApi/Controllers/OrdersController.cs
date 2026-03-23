@@ -43,13 +43,13 @@ public class OrdersController : ControllerBase
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
             var username = User.FindFirst(ClaimTypes.Name)?.Value;
 
-            if (userRole != nameof(PermissionType.Admin))
-            {
-                _logger.LogWarning($"Usuário {username} tentou acessar lista completa de pedidos sem permissão de Admin.");
-                return Forbid("Acesso negado. Apenas administradores podem visualizar todos os pedidos.");
-            }
-
-            _logger.LogInformation($"Admin {username} acessando lista completa de pedidos.");
+            // if (userRole != nameof(PermissionType.Admin))
+            // {
+            //     _logger.LogWarning($"Usuário {username} tentou acessar lista completa de pedidos sem permissão de Admin.");
+            //     return Forbid("Acesso negado. Apenas administradores podem visualizar todos os pedidos.");
+            // }
+            //
+            // _logger.LogInformation($"Admin {username} acessando lista completa de pedidos.");
 
             var ordersListKey = "ordersList";
             
