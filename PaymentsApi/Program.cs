@@ -1,11 +1,26 @@
+using CatalogApi.Service;
 using Core.Models;
 using Core.Repository;
 using Infrastructure.Repository;
 using Microsoft.Extensions.Options;
+using NewRelic.LogEnrichers.Serilog;
 using PaymentsApi.Configs;
 using PaymentsApi.Service;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .Enrich.WithNewRelicLogsInContext() // método do pacote
+    .WriteTo.File(
+        path: "logs/app.log.json",
+        formatter: new NewRelicFormatter(),
+        rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+
+builder.Host.UseSerilog();
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -14,6 +29,11 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Configuração do cache
+builder.Services.AddMemoryCache();
+builder.Services.AddTransient<ICacheService, MemCacheService>();
+
 
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 
