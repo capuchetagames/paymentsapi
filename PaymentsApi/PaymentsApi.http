@@ -1,6 +1,6 @@
 @PaymentsApi_HostAddress = http://localhost:5109
 
-GET {{PaymentsApi_HostAddress}}/weatherforecast/
+GET {{PaymentsApi_HostAddress}}/api/Orders/health
 Accept: application/json
 
 ###
