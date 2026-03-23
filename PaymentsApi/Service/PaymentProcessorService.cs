@@ -33,7 +33,7 @@ public class PaymentProcessorService : IPaymentProcessor
         await _rabbitMqService.PublishAsync(
             "payments.events",
             "payment.approved",
-            new PaymentProcessedEvent(orderPlacedEvent.UserId, orderPlacedEvent.GameId, orderPlacedEvent.Email, orderPlacedEvent.Name, "APROVED")
+            new PaymentProcessedEvent(orderPlacedEvent.UserId, orderPlacedEvent.GameId, orderPlacedEvent.Email, orderPlacedEvent.Name, "APPROVED")
         );
     }
 }
