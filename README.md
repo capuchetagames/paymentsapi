@@ -46,6 +46,8 @@ paymentsapi/
 - **SQL Server 2022** - Banco de dados relacional
 - **RabbitMQ.Client 7.2.0** - Message broker para comunicação assíncrona
 - **FluentValidation 12.1.1** - Validação de dados
+- **Serilog 4.3.1** - Logging estruturado com saída em JSON
+- **New Relic APM + LogEnrichers.Serilog** - Monitoramento e rastreamento de logs
 - **Swagger/ReDoc** - Documentação da API
 - **Docker & Docker Compose** - Containerização
 - **Kubernetes** - Orquestração de containers
@@ -112,7 +114,7 @@ dotnet run --project PaymentsApi
 
 #### Pedidos (Orders)
 
-- **GET** `/api/orders` - Lista todos os pedidos (Admin only)
+- **GET** `/api/orders` - Lista todos os pedidos
 - **GET** `/api/orders/{id}` - Busca pedido por ID
 - **GET** `/api/orders/my-orders` - Lista pedidos do usuário autenticado
 - **DELETE** `/api/orders/{id}` - Deleta um pedido (Admin only)
@@ -139,8 +141,8 @@ Authorization: Bearer {seu-token-jwt}
 
 ### Permissões
 
-- **Admin**: Acesso total (listar todos pedidos, deletar pedidos)
-- **User**: Acesso limitado (apenas seus próprios pedidos)
+- **Admin**: Acesso total (deletar pedidos, visualizar qualquer pedido por ID)
+- **User**: Acesso limitado (apenas seus próprios pedidos via `/my-orders` ou `/api/orders/{id}` com verificação de propriedade)
 
 ## 🐳 Deployment
 
@@ -199,6 +201,40 @@ Recursos Kubernetes disponíveis:
 | `RabbitMq__User` | Usuário do RabbitMQ | admin |
 | `RabbitMq__Password` | Senha do RabbitMQ | admin |
 | `Services__UsersApi__BaseUrl` | URL base da UsersAPI | http://users-api:8080/ |
+| `NEW_RELIC_LICENSE_KEY` | Chave de licença do New Relic para envio de telemetria | - |
+| `NEW_RELIC_APP_NAME` | Nome da aplicação no painel do New Relic | payments-api |
+
+## 📊 Observabilidade
+
+A aplicação utiliza **Serilog** para logging estruturado e integração com o **New Relic APM** para monitoramento.
+
+### Logging com Serilog
+
+Os logs são gerados em formato JSON enriquecido com metadados do New Relic e gravados em:
+
+- **Arquivo**: `logs/app-YYYYMMDD.log.json` (rotação diária, criado automaticamente na raiz da aplicação)
+
+> **Nota:** No ambiente Docker, o diretório `logs/` é criado dentro do container. Para persistir os logs, adicione um volume ao serviço em `docker-compose.yaml`:
+> ```yaml
+> volumes:
+>   - ./logs:/app/logs
+> ```
+
+### New Relic APM
+
+O agente New Relic é instalado automaticamente no container Docker (via `Dockerfile`) e configurado para:
+
+- Monitorar a aplicação .NET
+- Encaminhar logs em tempo real via in-process log forwarding (`NEW_RELIC_APPLICATION_LOGGING_FORWARDING_ENABLED=true`)
+
+Para habilitar o monitoramento com New Relic, configure as variáveis de ambiente:
+
+```bash
+NEW_RELIC_LICENSE_KEY=<sua_chave_de_licenca>
+NEW_RELIC_APP_NAME=payments-api
+```
+
+Adicione essas variáveis no arquivo `.env` na raiz do projeto antes de executar com Docker Compose.
 
 ## 🤝 Integração com Outros Serviços
 
