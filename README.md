@@ -280,14 +280,3 @@ dotnet ef migrations add NomeDaMigracao --project Infrastructure --startup-proje
 ```bash
 dotnet ef database update --project Infrastructure --startup-project PaymentsApi
 ```
-
-## 👥 Autores
-
-**Capucheta Games** - [GitHub](https://github.com/capuchetagames)
-
----
-
-
-## 🔄 Status do Projeto
-
-✅ Projeto em desenvolvimento ativo
