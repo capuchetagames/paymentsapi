@@ -20,20 +20,38 @@ public class PaymentProcessorService : IPaymentProcessor
     {
         Console.WriteLine($" Processa o Pgto  : {orderPlacedEvent.UserId} | {orderPlacedEvent.GameId} | {orderPlacedEvent.Price}");
         
-        var payment = new Payment
+        try
         {
-            UserId = orderPlacedEvent.UserId,
-            GameId =  orderPlacedEvent.GameId,
-            Price = orderPlacedEvent.Price
-        };
+            var payment = new Payment
+            {
+                UserId = orderPlacedEvent.UserId,
+                GameId = orderPlacedEvent.GameId,
+                Price = orderPlacedEvent.Price,
+                Status = "APPROVED"
+            };
+            
+            _repository.Add(payment);
+            Console.WriteLine($"Pagamento salvo no banco para UserId: {orderPlacedEvent.UserId}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao salvar pagamento no banco: {ex.GetType().Name} - {ex.InnerException?.Message}");
+            throw;
+        }
         
-        _repository.Add(payment);
-
-        // 2. Publica evento
-        await _rabbitMqService.PublishAsync(
-            "payments.events",
-            "payment.approved",
-            new PaymentProcessedEvent(orderPlacedEvent.UserId, orderPlacedEvent.GameId, orderPlacedEvent.Email, orderPlacedEvent.Name, "APPROVED")
-        );
+        try
+        {
+            await _rabbitMqService.PublishAsync(
+                "payments.events",
+                "payment.approved",
+                new PaymentProcessedEvent(orderPlacedEvent.UserId, orderPlacedEvent.GameId, orderPlacedEvent.Email, orderPlacedEvent.Name, "APPROVED")
+            );
+            Console.WriteLine($"Evento payment.approved publicado para UserId: {orderPlacedEvent.UserId}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao publicar evento no RabbitMQ: {ex.GetType().Name} - {ex.Message}");
+            throw;
+        }
     }
 }
