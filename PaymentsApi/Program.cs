@@ -90,4 +90,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+Console.WriteLine("Payments API is up");
+
 app.Run();
