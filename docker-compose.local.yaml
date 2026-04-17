@@ -1,0 +1,32 @@
+﻿services:
+  payments-db:
+    image: postgres:16
+    container_name: payments_db_postgres
+    environment:
+      POSTGRES_DB: Db.Payments
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - payments_pg_data:/var/lib/postgresql/data
+    networks:
+      - microsservicos-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d Db.Payments" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  payments-api:
+    depends_on:
+      payments-db:
+        condition: service_healthy
+    
+volumes:
+  payments_pg_data:
+
+networks:
+  microsservicos-net:
+    name: app-network
+    driver: bridge
