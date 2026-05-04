@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -15,13 +16,13 @@ namespace Infrastructure.Migrations
                 name: "Payments",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INT", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "INT", nullable: false),
-                    GameId = table.Column<int>(type: "INT", nullable: false),
-                    Price = table.Column<decimal>(type: "DECIMAL(7,4)", nullable: false),
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<int>(type: "INTEGER", nullable: false),
+                    GameId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Price = table.Column<decimal>(type: "numeric(7,4)", nullable: false),
                     Status = table.Column<string>(type: "VARCHAR(100)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "DATETIME", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "TIMESTAMP", nullable: false)
                 },
                 constraints: table =>
                 {

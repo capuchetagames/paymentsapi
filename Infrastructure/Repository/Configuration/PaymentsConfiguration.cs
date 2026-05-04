@@ -10,12 +10,12 @@ public class PaymentsConfiguration : IEntityTypeConfiguration<Payment>
     {
         builder.ToTable("Payments");
         builder.HasKey(x => x.Id);
-        builder.Property(x => x.Id).HasColumnType("INT").UseIdentityColumn();
-        builder.Property(x=>x.UserId).HasColumnType("INT").IsRequired();
-        builder.Property(x=>x.GameId).HasColumnType("INT").IsRequired();
+        builder.Property(x => x.Id).HasColumnType("INTEGER").UseIdentityColumn();
+        builder.Property(x=>x.UserId).HasColumnType("INTEGER").IsRequired();
+        builder.Property(x=>x.GameId).HasColumnType("INTEGER").IsRequired();
         builder.Property(x => x.Price).HasColumnType("DECIMAL(7,4)").IsRequired();
         builder.Property(x => x.Status).HasColumnType("VARCHAR(100)").IsRequired();
-        builder.Property(x=> x.CreatedAt).HasColumnType("DATETIME").IsRequired();
+        builder.Property(x=> x.CreatedAt).HasColumnType("TIMESTAMP").IsRequired();
         
         // builder.HasOne(u=>u.User).WithMany(u=>u.Payments).HasPrincipalKey(u=>u.Id);
         // builder.HasOne(g=>g.Game).WithMany(g=>g.Payments).HasPrincipalKey(g=>g.Id);
