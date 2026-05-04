@@ -1,3 +1,4 @@
+using Amazon.DynamoDBv2;
 using CatalogApi.Service;
 using Core.Models;
 using Core.Repository;
@@ -5,22 +6,36 @@ using Infrastructure.Repository;
 using Microsoft.Extensions.Options;
 using NewRelic.LogEnrichers.Serilog;
 using PaymentsApi.Configs;
+using PaymentsApi.Middlewares;
 using PaymentsApi.Service;
+using PaymentsApi.Service.DynamoLogging;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-Log.Logger = new LoggerConfiguration()
-    .Enrich.FromLogContext()
-    .Enrich.WithNewRelicLogsInContext() // método do pacote
-    .WriteTo.File(
-        path: "logs/app.log.json",
-        formatter: new NewRelicFormatter(),
-        rollingInterval: RollingInterval.Day)
-    .CreateLogger();
+// Log.Logger = new LoggerConfiguration()
+//     .Enrich.FromLogContext()
+//     .Enrich.WithNewRelicLogsInContext() // método do pacote
+//     .WriteTo.File(
+//         path: "logs/app.log.json",
+//         formatter: new NewRelicFormatter(),
+//         rollingInterval: RollingInterval.Day)
+//     .CreateLogger();
+//
+//
+// builder.Host.UseSerilog();
+
+builder.Services.AddDynamoDb(builder.Configuration);
+
+var serviceProvider = builder.Services.BuildServiceProvider();
+var dynamoClient    = serviceProvider.GetRequiredService<IAmazonDynamoDB>();
+var logTableName    = builder.Configuration["DynamoDb:LogTableName"];
 
 
-builder.Host.UseSerilog();
+builder.Logging
+    .ClearProviders()                      
+    .AddConsole()                          
+    .AddDynamoDbLogger(dynamoClient, logTableName, LogLevel.Information);
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -52,6 +67,9 @@ builder.Services.AddScoped<ITokenValidationService, TokenValidationService>();
 
 builder.Services.AddScoped<IPaymentProcessor, PaymentProcessorService>();
 
+builder.Services.AddTransient<ICorrelationIdService, CorrelationIdService>();
+builder.Services.AddScoped(typeof(IBaseLogger<>), typeof(BaseLogger<>));
+
 builder.Services.AddHealthChecks();
 
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMq"));
@@ -67,6 +85,9 @@ builder.Services.AddHostedService<OrderEventsConsumer>();
 
 
 var app = builder.Build();
+
+app.UseLogMiddleware();
+app.UseDynamoLogging();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
