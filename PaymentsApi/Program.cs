@@ -35,7 +35,7 @@ var logTableName    = builder.Configuration["DynamoDb:LogTableName"];
 builder.Logging
     .ClearProviders()                      
     .AddConsole()                          
-    .AddDynamoDbLogger(dynamoClient, logTableName, LogLevel.Information);
+    .AddDynamoDbLogger(dynamoClient, logTableName, LogLevel.Warning);
 
 // Add services to the container.
 builder.Services.AddControllers();
